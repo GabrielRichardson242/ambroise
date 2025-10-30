@@ -1,3 +1,84 @@
+# -----------------------------
+# ENVIRONMENT & KEYS
+# -----------------------------
 .env
 .env.local
 .env.*.local
+
+# -----------------------------
+# DEPENDENCIES
+# -----------------------------
+node_modules/
+package-lock.json
+pnpm-lock.yaml
+yarn.lock
+
+# -----------------------------
+# BUILD & DIST
+# -----------------------------
+dist/
+build/
+.vite/
+.cache/
+.temp/
+
+# -----------------------------
+# LOGS & DEBUG
+# -----------------------------
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+*.log
+
+# -----------------------------
+# SYSTEM FILES
+# -----------------------------
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*.tmp
+
+# -----------------------------
+# IDE / EDITOR
+# -----------------------------
+.vscode/
+.idea/
+*.iml
+
+# -----------------------------
+# LOCAL ASSETS & TEST FILES
+# -----------------------------
+public/draco/
+public/scans/
+public/uploads/
+src/__tests__/
+src/dev/
+test-results/
+
+# -----------------------------
+# SUPABASE & LOCAL CONFIG
+# -----------------------------
+.supabase/
+supabase/.branches/
+supabase/.temp/
+
+# -----------------------------
+# GENERATED OUTPUTS
+# -----------------------------
+*.glb
+*.gltf
+*.draco
+*.wasm
+*.zip
+*.tar
+*.7z
+
+# -----------------------------
+# OS / MISC
+# -----------------------------
+*.orig
+*.bak
+*.rej
+node_modules

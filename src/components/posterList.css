@@ -1,0 +1,101 @@
+.poster-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, 85px);
+  gap: 12px;
+  justify-content: center;
+}
+
+.poster-thumb {
+  width: 85px;
+  height: 120px;
+  border-radius: 8px;
+  object-fit: cover;
+  cursor: pointer;
+  border: 1px solid #555;
+  transition: border 0.15s ease;
+}
+
+.poster-thumb.selected {
+  border: 2px solid #ccc;
+}
+
+/* Add Info button */
+.add-info-btn {
+  width: 100%;
+  margin-top: 6px;
+  padding: 6px;
+  border-radius: 6px;
+  background-color: #333;
+  color: #eee;
+  border: 1px solid #555;
+  font-size: 14px;
+  cursor: pointer;
+}
+.add-info-btn:hover {
+  background-color: #444;
+}
+
+/* Modal popup overlay */
+.info-popup-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0,0,0,0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+
+/* Popup box */
+.info-popup {
+  background-color: #2b2b2b;
+  padding: 20px;
+  border-radius: 12px;
+  width: 280px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  color: #eee;
+}
+
+.info-popup input,
+.info-popup textarea {
+  background: #1c1c1c;
+  border: 1px solid #444;
+  border-radius: 6px;
+  padding: 8px;
+  color: #eee;
+  font-size: 14px;
+}
+
+.info-popup textarea {
+  resize: none;
+  height: 80px;
+}
+
+.info-popup button {
+  padding: 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  border: 1px solid #555;
+  background: #333;
+  color: #eee;
+}
+.info-popup button:hover {
+  background: #444;
+}
+
+/* Info summary box */
+.poster-info-summary {
+  background: #333;
+  border: 1px solid #555;
+  border-radius: 6px;
+  padding: 6px;
+  color: #ccc;
+  font-size: 12px;
+  margin-top: 4px;
+}

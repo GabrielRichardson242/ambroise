@@ -1,0 +1,40 @@
+:root { --gap: 16px; }
+
+.sidebar {
+  position: absolute;
+  right: 20px;
+  top: var(--gap);
+  height: calc(100vh - 2 * var(--gap));
+  width: 260px;
+  display: flex;
+  flex-direction: column;
+  background: #2b2b2b;
+  border-radius: 12px;
+  overflow: hidden;
+  z-index: 10;
+}
+
+.tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  padding: 8px;
+  background: #3a3a3a;
+}
+
+.tab {
+  height: 32px;
+  border: 1px solid #5a5a5a;
+  background: #333;
+}
+
+.tab.active {
+  transform: translateY(-3px);
+  outline: 1px solid #cfcfcf;
+}
+
+.content {
+  flex: 1;
+  padding: 12px;
+  overflow: auto;
+}

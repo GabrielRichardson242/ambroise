@@ -1,7 +1,7 @@
-import { useState } from "react";
 import { A_SIZES } from "./EditPoster";
 import PosterInfoPopup from "./PosterInfoPopup";
 import "./posterList.css";
+import { useState } from "react";
 
 export default function FileUploadBox({
   onFileUpload,
@@ -13,27 +13,34 @@ export default function FileUploadBox({
   setPosterUrls,
   setPosterSizes,
 }) {
-  const [posterInfo, setPosterInfo] = useState([]); // [{ name, description }]
+  const [posterInfo, setPosterInfo] = useState([]);
   const [showPopup, setShowPopup] = useState(false);
   const [popupIndex, setPopupIndex] = useState(null);
 
-  const handleChange = (event) => {
+  const handleChange = async (event) => {
     const file = event.target.files[0];
-    if (!file || !onFileUpload) return;
-    onFileUpload(file);
+    if (!file) return;
+    if (!onFileUpload) return;
+
+    // Disable the old createObjectURL logic entirely
+    await onFileUpload(file); // handleFileUpload() inside Editor does everything
     setPosterInfo((prev) => [...prev, { name: "", description: "" }]);
+    event.target.value = ""; // reset input so same file can be reuploaded if needed
   };
 
   const handleDelete = (index) => {
     const updatedUrls = [...posterUrls];
-    const updatedScales = [...posterSizes];
+    const updatedSizes = [...posterSizes];
     const updatedInfo = [...posterInfo];
+
     updatedUrls.splice(index, 1);
-    updatedScales.splice(index, 1);
+    updatedSizes.splice(index, 1);
     updatedInfo.splice(index, 1);
+
     setPosterUrls(updatedUrls);
-    setPosterSizes(updatedScales);
+    setPosterSizes(updatedSizes);
     setPosterInfo(updatedInfo);
+
     if (selectedPosterIndex === index) onSelectPoster(null);
   };
 
@@ -53,7 +60,7 @@ export default function FileUploadBox({
         right: 5,
         width: "240px",
         backgroundColor: "rgba(30,30,30,0.6)",
-        padding: "5px", // main container padding (5px gutter all around)
+        padding: "5px",
         borderRadius: "20px",
         zIndex: 10,
       }}
@@ -71,23 +78,22 @@ export default function FileUploadBox({
           <div
             key={index}
             style={{
-              backgroundColor: "#111", // slightly darker inner box
+              backgroundColor: "#111",
               borderRadius: "8px",
               padding: "10px",
-              margin: "5px", // 5px inset from main box
+              margin: "5px",
               display: "flex",
               flexDirection: "column",
               alignItems: "center",
               justifyContent: "center",
               gap: "8px",
-              width: "calc(100% - 10px)", // maintain 5px gap left/right
+              width: "calc(100% - 10px)",
               border:
                 selectedPosterIndex === index
                   ? "1px solid #aaa"
                   : "1px solid #333",
             }}
           >
-            {/* Thumbnail */}
             <img
               src={url}
               alt={`Poster ${index + 1}`}
@@ -104,7 +110,6 @@ export default function FileUploadBox({
               }}
             />
 
-            {/* Info summary */}
             {posterInfo[index]?.name && (
               <div
                 className="poster-info-summary"
@@ -119,7 +124,6 @@ export default function FileUploadBox({
               </div>
             )}
 
-            {/* Size dropdown (per poster) */}
             <select
               value={posterSizes[index]}
               onChange={(e) => onChangePosterSize(index, e.target.value)}
@@ -143,9 +147,7 @@ export default function FileUploadBox({
               ))}
             </select>
 
-            {/* Add/Edit info */}
             <button
-              className="add-info-btn"
               style={{ width: "100%" }}
               onClick={() => {
                 setPopupIndex(index);
@@ -155,7 +157,6 @@ export default function FileUploadBox({
               {posterInfo[index]?.name ? "Edit Info" : "Add Info"}
             </button>
 
-            {/* Delete button */}
             <button
               onClick={() => handleDelete(index)}
               style={{
@@ -174,7 +175,6 @@ export default function FileUploadBox({
           </div>
         ))}
 
-        {/* Upload new */}
         <label
           htmlFor="file-upload"
           style={{
@@ -195,13 +195,12 @@ export default function FileUploadBox({
         <input
           id="file-upload"
           type="file"
-          accept=".jpg,.jpeg,.png,.psd"
+          accept=".jpg,.jpeg,.png,.pdf"
           onChange={handleChange}
           style={{ display: "none" }}
         />
       </div>
 
-      {/* Info popup */}
       {showPopup && (
         <PosterInfoPopup
           initialData={posterInfo[popupIndex]}

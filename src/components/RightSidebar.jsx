@@ -5,8 +5,7 @@ import WorldEditPanel from "./WorldEditPanel";
 export default function RightSidebar({
   mode,                  // 'upload' | 'world'
   onModeChange,
-  // Poster props for FileUploadBox
-  onFileUpload,
+  handleFileUpload,
   onSelectPoster,
   selectedPosterIndex,
   posterUrls,
@@ -39,7 +38,7 @@ export default function RightSidebar({
       <div className="content">
         {mode === "upload" && (
           <FileUploadBox
-            onFileUpload={onFileUpload}
+            onFileUpload={handleFileUpload}
             onSelectPoster={onSelectPoster}
             selectedPosterIndex={selectedPosterIndex}
             posterUrls={posterUrls}

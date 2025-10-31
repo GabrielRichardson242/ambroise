@@ -7,6 +7,7 @@ export type PosterInput = {
   position: number[]
   rotation: number[]
   scale: number[]
+  size?: string
   title?: string
   description?: string
 }
@@ -15,7 +16,8 @@ export type RoomInput = {
   id: string
   name: string
   description?: string
-  scan_url: string
+  scan_draco_url: string
+  raw_url?: string
   camera_position?: number[]
   camera_target?: number[]
   theme?: string
@@ -27,7 +29,8 @@ export async function saveRoomDraft(room: RoomInput, posters: PosterInput[]) {
     id: room.id,
     name: room.name,
     description: room.description ?? null,
-    scan_url: room.scan_url,
+    scan_draco_url: room.scan_draco_url ?? null,
+    raw_url: room.raw_url ?? null,
     camera_position: room.camera_position ?? null,
     camera_target: room.camera_target ?? null,
     theme: room.theme ?? null,
@@ -48,10 +51,13 @@ export async function saveRoomDraft(room: RoomInput, posters: PosterInput[]) {
 
 // 2) Publish (set preview on for public listing)
 export async function publishRoom(roomId: string) {
-  const { error } = await supabase.from('rooms').update({
-    is_preview: true,
-    updated_at: new Date().toISOString(),
-  }).eq('id', roomId)
+  const { error } = await supabase
+    .from('rooms')
+    .update({
+      is_preview: true,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', roomId)
   if (error) throw error
 }
 

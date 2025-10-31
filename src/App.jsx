@@ -11,14 +11,12 @@ import ProtectedRoute from "./components/ProtectedRoute";
 
 export default function App() {
   return (
-    <BrowserRouter>
+    <LiDARProvider>
       <AuthProvider>
-        <LiDARProvider>
+        <BrowserRouter>
           <Routes>
             <Route path="/login" element={<LoginPage />} />
             <Route path="/signup" element={<SignupPage />} />
-
-            {/* Protected routes */}
             <Route
               path="/"
               element={
@@ -35,20 +33,11 @@ export default function App() {
                 </ProtectedRoute>
               }
             />
-            <Route
-              path="/edit/:roomId"
-              element={
-                <ProtectedRoute>
-                  <Editor />
-                </ProtectedRoute>
-              }
-            />
-
-            {/* Public */}
+            <Route path="/edit/:roomId" element={<Editor />} />
             <Route path="/room/:roomId" element={<Viewer />} />
           </Routes>
-        </LiDARProvider>
+        </BrowserRouter>
       </AuthProvider>
-    </BrowserRouter>
+    </LiDARProvider>
   );
 }

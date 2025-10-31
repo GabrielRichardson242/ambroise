@@ -1,26 +1,36 @@
 import { useRef, useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { supabase } from "../lib/supabaseClient";
+import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
+import { DRACOLoader } from "three/examples/jsm/loaders/DRACOLoader.js";
 import SceneCanvas from "../components/SceneCanvas";
+import { useLiDAR } from "../context/LiDARContext";
 
 export default function Viewer() {
   const canvasRef = useRef();
   const lidarRef = useRef();
   const orbitRef = useRef();
   const { roomId } = useParams();
+  const { setMeshes } = useLiDAR();
 
   const [roomData, setRoomData] = useState(null);
   const [posters, setPosters] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    async function fetchData() {
+    async function fetchAndLoad() {
       try {
+        setLoading(true);
+        setError(null);
+
         const { data: room, error: roomErr } = await supabase
           .from("rooms")
           .select("*")
           .eq("id", roomId)
           .single();
         if (roomErr) throw roomErr;
+        setRoomData(room);
 
         const { data: posterRows, error: posterErr } = await supabase
           .from("posters")
@@ -28,20 +38,54 @@ export default function Viewer() {
           .eq("room_id", roomId)
           .order("created_at", { ascending: true });
         if (posterErr) throw posterErr;
-
-        setRoomData(room);
         setPosters(posterRows || []);
+
+        if (room.scan_draco_url) {
+          console.log("Loading scan from:", room.scan_draco_url);
+
+          const dracoLoader = new DRACOLoader();
+          dracoLoader.setDecoderPath("/draco/");
+          const loader = new GLTFLoader();
+          loader.setDRACOLoader(dracoLoader);
+
+          const gltf = await new Promise((resolve, reject) =>
+            loader.load(room.scan_draco_url, resolve, undefined, reject)
+          );
+
+          const lidarScene = gltf.scene || gltf.scenes?.[0];
+          if (!lidarScene) throw new Error("Invalid GLB: no scene");
+
+          lidarScene.traverse((c) => (c.frustumCulled = false));
+          const proxyMesh = lidarScene.clone(true);
+          setMeshes({ lidarMesh: lidarScene, proxyMesh });
+
+          console.log("✅ Scan loaded successfully");
+        } else {
+          console.warn("No scan_draco_url found for this room.");
+        }
       } catch (err) {
-        console.error("Failed to fetch room:", err.message);
+        console.error("❌ Viewer load error:", err.message);
+        setError(err.message);
+      } finally {
+        setLoading(false);
       }
     }
-    fetchData();
-  }, [roomId]);
 
-  if (!roomData) {
+    fetchAndLoad();
+  }, [roomId, setMeshes]);
+
+  if (loading) {
     return (
       <div className="flex items-center justify-center h-screen text-gray-400">
-        Loading room...
+        Loading LiDAR scan...
+      </div>
+    );
+  }
+
+  if (error || !roomData) {
+    return (
+      <div className="flex items-center justify-center h-screen text-red-400">
+        {error ? `Error: ${error}` : "Room data not found"}
       </div>
     );
   }
@@ -65,7 +109,7 @@ export default function Viewer() {
         isDragging={false}
         setIsDragging={() => {}}
         renderMode="mesh"
-        isEditable={false} // view-only
+        isEditable={false}
       />
 
       <div className="absolute top-4 left-4 bg-white/80 backdrop-blur p-3 rounded-lg text-black shadow-lg">

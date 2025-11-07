@@ -7,11 +7,9 @@ export default function FileUploadBox({
   onFileUpload,
   onSelectPoster,
   selectedPosterIndex,
-  posterUrls = [],
-  posterSizes = [],
+  posters = [],
   onChangePosterSize,
-  setPosterUrls,
-  setPosterSizes,
+  setPosters,
 }) {
   const [posterInfo, setPosterInfo] = useState([]);
   const [showPopup, setShowPopup] = useState(false);
@@ -22,25 +20,14 @@ export default function FileUploadBox({
     if (!file) return;
     if (!onFileUpload) return;
 
-    // Disable the old createObjectURL logic entirely
-    await onFileUpload(file); // handleFileUpload() inside Editor does everything
+    await onFileUpload(file); // Editor handles actual upload
     setPosterInfo((prev) => [...prev, { name: "", description: "" }]);
-    event.target.value = ""; // reset input so same file can be reuploaded if needed
+    event.target.value = ""; // allows re-uploading same file later
   };
 
   const handleDelete = (index) => {
-    const updatedUrls = [...posterUrls];
-    const updatedSizes = [...posterSizes];
-    const updatedInfo = [...posterInfo];
-
-    updatedUrls.splice(index, 1);
-    updatedSizes.splice(index, 1);
-    updatedInfo.splice(index, 1);
-
-    setPosterUrls(updatedUrls);
-    setPosterSizes(updatedSizes);
-    setPosterInfo(updatedInfo);
-
+    setPosters((prev) => prev.filter((_, i) => i !== index));
+    setPosterInfo((prev) => prev.filter((_, i) => i !== index));
     if (selectedPosterIndex === index) onSelectPoster(null);
   };
 
@@ -74,9 +61,9 @@ export default function FileUploadBox({
           justifyItems: "center",
         }}
       >
-        {posterUrls.map((url, index) => (
+        {posters.map((poster, index) => (
           <div
-            key={index}
+            key={poster.url || index}
             style={{
               backgroundColor: "#111",
               borderRadius: "8px",
@@ -95,7 +82,7 @@ export default function FileUploadBox({
             }}
           >
             <img
-              src={url}
+              src={poster.url}
               alt={`Poster ${index + 1}`}
               onClick={() => onSelectPoster?.(index)}
               className={`poster-thumb ${
@@ -125,7 +112,7 @@ export default function FileUploadBox({
             )}
 
             <select
-              value={posterSizes[index]}
+              value={poster.size ?? "A0"}
               onChange={(e) => onChangePosterSize(index, e.target.value)}
               style={{
                 width: "100%",

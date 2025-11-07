@@ -10,9 +10,7 @@ export default function SceneCanvas({
   lidarRef,
   orbitRef,
   canvasRef,
-  posterUrls = [],
-  posterSizes = [],
-  posterTransforms = [],
+  posters = [],               // unified poster array
   selectedPosterIndex = null,
   setSelectedPosterIndex = () => {},
   setIsDragging = () => {},
@@ -21,13 +19,16 @@ export default function SceneCanvas({
   isEditable = true,
   sceneKey = undefined,
 }) {
+  console.log("sceneKey prop:", sceneKey);
+  console.log("SceneCanvas posters len:", posters?.length, posters?.[0]?.url);
+
   const { meshReady } = useLiDAR();
-  const initialTransforms = posterTransforms;
   const posterRefs = useRef(new Map());
   const transformRef = useRef();
   const collectedTransforms = useRef(new Map());
   const webglCanvasRef = useRef(null);
 
+  // expose transform data to parent
   useEffect(() => {
     if (!canvasRef) return;
     if (!canvasRef.current) canvasRef.current = {};
@@ -37,6 +38,7 @@ export default function SceneCanvas({
         .map(([_, val]) => val);
   }, [canvasRef]);
 
+  // prevent WebGL context loss
   useEffect(() => {
     const el = webglCanvasRef.current;
     if (!el) return;
@@ -47,6 +49,7 @@ export default function SceneCanvas({
 
   const handleSelect = (index) => {
     if (!isEditable || !transformRef.current) return;
+    if (selectedPosterIndex === index) return;
     transformRef.current.detach();
     setSelectedPosterIndex(index);
     const mesh = posterRefs.current.get(index) || null;
@@ -73,11 +76,10 @@ export default function SceneCanvas({
   };
 
   const handleTransformChange = (idx, t) => {
-    console.log("Transform updated:", idx, t);
     collectedTransforms.current.set(idx, t);
   };
 
-  const showPosters = renderMode === "mesh" && posterUrls.length > 0;
+  const showPosters = renderMode === "mesh" && posters.length > 0;
 
   return (
     <div style={{ width: "100vw", height: "100vh" }}>
@@ -105,20 +107,21 @@ export default function SceneCanvas({
             </group>
           )}
           {meshReady && renderMode === "points" && <PointRoom />}
+
           {showPosters &&
-            posterUrls.map((url, i) => (
+            posters.map((poster, i) => (
               <EditPoster
-                key={i}
-                imageUrl={url}
+                key={poster.url || i}
+                imageUrl={poster.url}
                 index={i}
-                size={posterSizes?.[i] ?? "A0"}
+                size={poster.size ?? "A0"}
+                initialTransform={poster.transform}
                 selectedPosterIndex={selectedPosterIndex}
                 onSelect={isEditable ? handleSelect : undefined}
                 onMount={isEditable ? handlePosterMount : undefined}
                 onDragStart={isEditable ? () => setIsDragging(true) : undefined}
                 onDragEnd={isEditable ? () => setIsDragging(false) : undefined}
                 onTransformChange={isEditable ? handleTransformChange : undefined}
-                initialTransform={initialTransforms?.[i]}
               />
             ))}
         </Suspense>

@@ -1,4 +1,4 @@
-import { useRef, useState, useEffect } from "react";
+import { useRef, useState, useEffect, useMemo } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "../lib/supabaseClient";
 import SceneCanvas from "../components/SceneCanvas";
@@ -13,12 +13,14 @@ export default function Editor() {
   const canvasRef = useRef();
   const lidarRef = useRef();
   const orbitRef = useRef();
-  const { roomId: routeRoomId } = useParams();
   const navigate = useNavigate();
-
+  const { roomId: routeRoomId } = useParams();
   const generatedId = useRef(routeRoomId || uuidv4());
   const roomId = generatedId.current;
   const { setMeshes } = useLiDAR();
+  const hydratedRef = useRef(false);
+
+  console.log("roomID stable check:", roomId);
 
   useEffect(() => {
     if (!routeRoomId) navigate(`/edit/${roomId}`, { replace: true });
@@ -35,9 +37,8 @@ export default function Editor() {
     theme: "default",
   });
 
-  const [posterUrls, setPosterUrls] = useState([]);
-  const [posterSizes, setPosterSizes] = useState([]);
-  const [posterTransforms, setPosterTransforms] = useState([]); // [{position,rotation,scale}]
+  // unified poster array
+  const [posters, setPosters] = useState([]);
   const [selectedPosterIndex, setSelectedPosterIndex] = useState(null);
   const [isDragging, setIsDragging] = useState(false);
   const [sidebarMode, setSidebarMode] = useState("upload");
@@ -63,14 +64,15 @@ export default function Editor() {
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         });
-        if (createErr) console.error("Failed to create draft room:", createErr.message);
+        if (createErr)
+          console.error("Failed to create draft room:", createErr.message);
         else console.log("Draft room created:", roomId);
       }
     }
     ensureRoomExists();
   }, [roomId]);
 
-  // ---------- fetch room + hydrate scan, THEN fetch posters (with transforms) ----------
+  // ---------- fetch room + hydrate scan, THEN fetch posters ----------
   useEffect(() => {
     async function fetchRoomAndHydrate() {
       console.log("Hydrate check:", roomId);
@@ -90,35 +92,37 @@ export default function Editor() {
         return;
       }
 
-      console.log("Fetched room data:", room);
       setRoomData((prev) => ({
         ...prev,
         ...room,
         scan_draco_url: room.scan_draco_url || room.scan_url || "",
       }));
 
-      if (!room.scan_draco_url) {
-        console.warn("Room has no scan_draco_url — skipping loader");
-      } else {
-        console.log("Attempting to load scan from:", room.scan_draco_url);
+      // ---- hydrate scan only once ----
+      if (room.scan_draco_url && !hydratedRef.current) {
         try {
+          console.log("Attempting to load scan from:", room.scan_draco_url);
           const dracoLoader = new DRACOLoader();
           dracoLoader.setDecoderPath("/draco/");
+          dracoLoader.setWorkerLimit(1);
+
           const loader = new GLTFLoader();
           loader.setDRACOLoader(dracoLoader);
 
           const gltf = await new Promise((resolve, reject) =>
             loader.load(room.scan_draco_url, resolve, undefined, reject)
           );
+
           const lidarScene = gltf.scene || gltf.scenes?.[0];
           if (lidarScene) {
             lidarScene.traverse((c) => (c.frustumCulled = false));
             const proxyMesh = createProxyMeshFromScene(lidarScene.clone(true), {
               simplifyRatio: 0.05,
-              inflateScale: 1.02,
+              inflateDistance: 0.02,
             });
             setMeshes({ lidarMesh: lidarScene, proxyMesh });
-            console.log("Scan hydrated, now fetching posters…");
+            hydratedRef.current = true;
+            console.log("Scan hydrated ONCE");
           } else {
             console.warn("GLTF loaded but no scene found");
           }
@@ -127,8 +131,8 @@ export default function Editor() {
         }
       }
 
-      // fetch posters AFTER scan step
-      const { data: posters, error: postersErr } = await supabase
+      // ---- fetch posters AFTER scan ----
+      const { data: postersData, error: postersErr } = await supabase
         .from("posters")
         .select("*")
         .eq("room_id", roomId)
@@ -139,25 +143,20 @@ export default function Editor() {
         return;
       }
 
-      // build arrays in a consistent order
-      const urls = posters.map((p) => p.file_url);
-      const sizes = posters.map((p) => p.size || "A0");
-      const transforms = posters.map((p) => ({
-        position: Array.isArray(p.position) ? p.position : [0, 0, 0],
-        rotation: Array.isArray(p.rotation) ? p.rotation : [0, 0, 0],
-        scale: Array.isArray(p.scale) ? p.scale : [1, 1, 1],
+      const hydrated = postersData.map((p) => ({
+        url: p.file_url,
+        size: p.size || "A0",
+        transform: Array.isArray(p.position)
+          ? { position: p.position, rotation: p.rotation, scale: p.scale }
+          : null,
       }));
 
-      setPosterUrls(urls);
-      setPosterSizes(sizes);
-      setPosterTransforms(transforms);
-
-      console.log("Posters fetched after scan:", posters.length);
-      console.log("Poster transforms loaded:", transforms);
+      setPosters(hydrated);
+      console.log("Posters fetched after scan:", hydrated.length);
     }
 
     fetchRoomAndHydrate();
-  }, [roomId, setMeshes]);
+  }, [roomId]); // << run once per room
 
   // ---------- poster upload ----------
   const handleFileUpload = async (file) => {
@@ -193,16 +192,14 @@ export default function Editor() {
     const { data: urlData } = supabase.storage.from("posters").getPublicUrl(path);
     const publicUrl = urlData.publicUrl;
 
-    const defaultT = { position: [0, 0, 0], rotation: [0, 0, 0], scale: [1, 1, 1] };
-
     const { error: insertErr } = await supabase.from("posters").insert({
       id: crypto.randomUUID(),
       room_id: roomId,
       file_url: publicUrl,
       size: "A0",
-      position: defaultT.position,
-      rotation: defaultT.rotation,
-      scale: defaultT.scale,
+      position: null,
+      rotation: null,
+      scale: null,
       title: file.name,
       description: "",
       created_at: new Date().toISOString(),
@@ -214,16 +211,22 @@ export default function Editor() {
       console.log("Poster inserted:", publicUrl);
     }
 
-    // keep local arrays in sync (append)
-    setPosterUrls((prev) => [...prev, publicUrl]);
-    setPosterSizes((prev) => [...prev, "A0"]);
-    setPosterTransforms((prev) => [...prev, defaultT]);
+    // single stable update
+    setPosters((prev) => {
+      const next = [...prev, { url: publicUrl, size: "A0", transform: null }];
+      console.log("setPosters next len:", next.length);
+      return next;
+    });
   };
 
+  useEffect(() => {
+    console.log("Editor posters changed ->", posters.length);
+  }, [posters]);
+
   const handleChangePosterSize = (index, newSize) => {
-    const updated = [...posterSizes];
-    updated[index] = newSize;
-    setPosterSizes(updated);
+    setPosters((prev) =>
+      prev.map((p, i) => (i === index ? { ...p, size: newSize } : p))
+    );
   };
 
   async function handleSave(isPreview = false) {
@@ -245,7 +248,6 @@ export default function Editor() {
       });
       if (roomErr) throw roomErr;
 
-      // fetch existing posters in the same order we render (created_at asc)
       const { data: existingPosters, error: epErr } = await supabase
         .from("posters")
         .select("id")
@@ -262,14 +264,15 @@ export default function Editor() {
           const { error: updateErr } = await supabase
             .from("posters")
             .update({
-              position: Array.isArray(t.position) ? t.position : [0, 0, 0],
-              rotation: Array.isArray(t.rotation) ? t.rotation : [0, 0, 0],
-              scale: Array.isArray(t.scale) ? t.scale : [1, 1, 1],
-              size: posterSizes[i] ?? "A0",
+              position: t.position,
+              rotation: t.rotation,
+              scale: t.scale,
+              size: posters[i].size ?? "A0",
               updated_at: new Date().toISOString(),
             })
             .eq("id", existingPosters[i].id);
-          if (updateErr) console.error("Poster update failed:", updateErr.message);
+          if (updateErr)
+            console.error("Poster update failed:", updateErr.message);
         }
       } else {
         console.warn("No transforms captured; posters not updated");
@@ -282,6 +285,11 @@ export default function Editor() {
     }
   }
 
+  const postersMemo = useMemo(() => posters, [posters]);
+
+  // diagnostics
+  console.log("Editor posters len:", posters.length, posters[0]);
+
   return (
     <>
       <SceneCanvas
@@ -289,10 +297,7 @@ export default function Editor() {
         lidarRef={lidarRef}
         orbitRef={orbitRef}
         canvasRef={canvasRef}
-        lidarMesh={undefined}             // SceneCanvas should read from LiDARContext
-        posterUrls={posterUrls}
-        posterSizes={posterSizes}
-        posterTransforms={posterTransforms} // <<< IMPORTANT
+        posters={postersMemo}
         selectedPosterIndex={selectedPosterIndex}
         setSelectedPosterIndex={setSelectedPosterIndex}
         isDragging={isDragging}
@@ -307,11 +312,9 @@ export default function Editor() {
         handleFileUpload={handleFileUpload}
         onSelectPoster={setSelectedPosterIndex}
         selectedPosterIndex={selectedPosterIndex}
-        posterUrls={posterUrls}
-        posterSizes={posterSizes}
+        posters={posters}
         onChangePosterSize={handleChangePosterSize}
-        setPosterUrls={setPosterUrls}
-        setPosterSizes={setPosterSizes}
+        setPosters={setPosters}
       />
 
       <div className="absolute bottom-4 right-4 flex gap-2 z-50">

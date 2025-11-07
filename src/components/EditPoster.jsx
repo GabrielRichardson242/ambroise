@@ -42,10 +42,13 @@ export default function EditPoster({
 
   // === Apply initial transform from Supabase ===
   useEffect(() => {
-    if (!meshRef.current) return;
-    if (initialTransform.position) meshRef.current.position.fromArray(initialTransform.position);
-    if (initialTransform.rotation) meshRef.current.rotation.set(...initialTransform.rotation);
-    if (initialTransform.scale) meshRef.current.scale.fromArray(initialTransform.scale);
+    if (!meshRef.current || !initialTransform) return;
+    if (initialTransform.position)
+      meshRef.current.position.fromArray(initialTransform.position);
+    if (initialTransform.rotation)
+      meshRef.current.rotation.set(...initialTransform.rotation);
+    if (initialTransform.scale)
+      meshRef.current.scale.fromArray(initialTransform.scale);
   }, [initialTransform]);
 
   // === Spawn once in front of camera (only for new posters) ===

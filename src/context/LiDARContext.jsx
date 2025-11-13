@@ -1,4 +1,4 @@
-import { createContext, useContext, useRef, useState } from "react";
+import { createContext, useContext, useRef, useState, useCallback, useEffect } from "react";
 
 const LiDARContext = createContext(null);
 
@@ -12,11 +12,18 @@ export function LiDARProvider({ children }) {
   const [uvMap, setUvMap] = useState(null);
   const [uvReady, setUvReady] = useState(false);
 
-  const setMeshes = ({ lidarMesh, proxyMesh }) => {
+  const setMeshes = useCallback(({ lidarMesh, proxyMesh }) => {
     lidarMeshRef.current = lidarMesh || null;
     proxyMeshRef.current = proxyMesh || null;
     setMeshReady(!!lidarMesh && !!proxyMesh);
-  };
+  }, []);
+
+  useEffect(() => {
+    console.log("LiDAR context update:", {
+      meshReady,
+      uvReady,
+    });
+  }, [meshReady, uvReady]);
 
   return (
     <LiDARContext.Provider

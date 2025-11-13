@@ -1,34 +1,36 @@
+import { useState } from "react";
 import { A_SIZES } from "./EditPoster";
 import PosterInfoPopup from "./PosterInfoPopup";
 import "./posterList.css";
-import { useState } from "react";
+import { useRoomStore } from "../state/useRoomStore";
+import { roomState } from "../state/roomState";
 
-export default function FileUploadBox({
-  onFileUpload,
-  onSelectPoster,
-  selectedPosterIndex,
-  posters = [],
-  onChangePosterSize,
-  setPosters,
-}) {
+export default function FileUploadBox({ handleFileUpload }) {
+  const posters = useRoomStore((s) => s.posters);
   const [posterInfo, setPosterInfo] = useState([]);
   const [showPopup, setShowPopup] = useState(false);
   const [popupIndex, setPopupIndex] = useState(null);
+  const [selectedPosterIndex, setSelectedPosterIndex] = useState(null);
+
+  console.log("FileUploadBox render:", posters.length, posters);
 
   const handleChange = async (event) => {
     const file = event.target.files[0];
     if (!file) return;
-    if (!onFileUpload) return;
-
-    await onFileUpload(file); // Editor handles actual upload
+    await handleFileUpload(file);
     setPosterInfo((prev) => [...prev, { name: "", description: "" }]);
-    event.target.value = ""; // allows re-uploading same file later
+    event.target.value = "";
   };
 
   const handleDelete = (index) => {
-    setPosters((prev) => prev.filter((_, i) => i !== index));
+    roomState.removePoster(index);
     setPosterInfo((prev) => prev.filter((_, i) => i !== index));
-    if (selectedPosterIndex === index) onSelectPoster(null);
+    if (selectedPosterIndex === index) setSelectedPosterIndex(null);
+  };
+
+  const handleSizeChange = (index, newSize) => {
+    roomState.updatePoster(index, { size: newSize });
+    setSelectedPosterIndex((prev) => (prev === index ? index : prev));
   };
 
   const handleSaveInfo = (data) => {
@@ -63,7 +65,7 @@ export default function FileUploadBox({
       >
         {posters.map((poster, index) => (
           <div
-            key={poster.url || index}
+            key={poster.id || index}
             style={{
               backgroundColor: "#111",
               borderRadius: "8px",
@@ -84,7 +86,7 @@ export default function FileUploadBox({
             <img
               src={poster.url}
               alt={`Poster ${index + 1}`}
-              onClick={() => onSelectPoster?.(index)}
+              onClick={() => setSelectedPosterIndex(index)}
               className={`poster-thumb ${
                 selectedPosterIndex === index ? "selected" : ""
               }`}
@@ -98,13 +100,7 @@ export default function FileUploadBox({
             />
 
             {posterInfo[index]?.name && (
-              <div
-                className="poster-info-summary"
-                style={{
-                  width: "100%",
-                  textAlign: "center",
-                }}
-              >
+              <div style={{ width: "100%", textAlign: "center" }}>
                 <strong>{posterInfo[index].name}</strong>
                 <br />
                 {posterInfo[index].description.slice(0, 30)}...
@@ -113,7 +109,7 @@ export default function FileUploadBox({
 
             <select
               value={poster.size ?? "A0"}
-              onChange={(e) => onChangePosterSize(index, e.target.value)}
+              onChange={(e) => handleSizeChange(index, e.target.value)}
               style={{
                 width: "100%",
                 padding: "6px",
@@ -124,9 +120,6 @@ export default function FileUploadBox({
                 fontSize: "13px",
               }}
             >
-              <option value="" disabled>
-                Size
-              </option>
               {Object.keys(A_SIZES).map((size) => (
                 <option key={size} value={size}>
                   {size}

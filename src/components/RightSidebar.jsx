@@ -1,54 +1,61 @@
 import "./rightSidebar.css";
 import FileUploadBox from "./FileUploadBox";
 import WorldEditPanel from "./WorldEditPanel";
+import {roomState} from "../state/roomState";
 
-export default function RightSidebar({
-  mode,                  // 'upload' | 'world'
-  onModeChange,
-  handleFileUpload,
-  onSelectPoster,
-  selectedPosterIndex,
-  posterUrls,
-  posterSizes,
-  onChangePosterSize,
-  setPosterUrls,
-  setPosterSizes,
-}) {
+export default function RightSidebar({ mode, onModeChange, posters, handleFileUpload }) {
+
+  const handleUploadFallback = async (file) => {
+    const allowed = ["image/jpeg", "image/png", "application/pdf"];
+    if (!allowed.includes(file.type)) {
+      alert("Invalid file type. Use JPG, PNG, or PDF.");
+      return;
+    }
+
+    const path = `${roomState.data.id}/${crypto.randomUUID()}-${file.name}`;
+    const { error } = await window.supabase.storage
+      .from("posters")
+      .upload(path, file, { cacheControl: "3600", upsert: false });
+
+    if (error) {
+      console.error("Upload failed:", error.message);
+      alert("Upload failed.");
+      return;
+    }
+
+    const { data: urlData } =
+      window.supabase.storage.from("posters").getPublicUrl(path);
+
+    roomState.addPoster(urlData.publicUrl);
+  };
+
   return (
     <aside className="sidebar">
-      {/* --- Tab buttons --- */}
       <div className="tabs">
         <button
           className={`tab ${mode === "upload" ? "active" : ""}`}
-          onClick={() => onModeChange("upload")}
+          onClick={() => onModeChange?.("upload")}
           title="Poster / Upload mode"
         >
           🖼
         </button>
+
         <button
           className={`tab ${mode === "world" ? "active" : ""}`}
-          onClick={() => onModeChange("world")}
+          onClick={() => onModeChange?.("world")}
           title="World Edit mode"
         >
           🌐
         </button>
       </div>
 
-      {/* --- Content area --- */}
       <div className="content">
         {mode === "upload" && (
           <FileUploadBox
-            onFileUpload={handleFileUpload}
-            onSelectPoster={onSelectPoster}
-            selectedPosterIndex={selectedPosterIndex}
-            posterUrls={posterUrls}
-            posterSizes={posterSizes}
-            onChangePosterSize={onChangePosterSize}
-            setPosterUrls={setPosterUrls}
-            setPosterSizes={setPosterSizes}
+            posters={posters}
+            handleFileUpload={handleFileUpload || handleUploadFallback}
           />
         )}
-
         {mode === "world" && <WorldEditPanel />}
       </div>
     </aside>

@@ -1,132 +1,149 @@
 import { Canvas } from "@react-three/fiber";
 import { OrbitControls, TransformControls } from "@react-three/drei";
-import { Suspense, useRef, useEffect } from "react";
+import { Suspense, useRef, useEffect, useState, useMemo, forwardRef } from "react";
 import LiDARRoom from "./LiDARRoom";
 import PointRoom from "./PointRoom";
 import EditPoster from "./EditPoster";
 import { useLiDAR } from "../context/LiDARContext";
+import { useRoomStore } from "../state/useRoomStore";
+import { roomState } from "../state/roomState";
 
-export default function SceneCanvas({
-  lidarRef,
-  orbitRef,
-  canvasRef,
-  posters = [],               // unified poster array
-  selectedPosterIndex = null,
-  setSelectedPosterIndex = () => {},
-  setIsDragging = () => {},
-  isDragging = false,
-  renderMode = "mesh",
-  isEditable = true,
-  sceneKey = undefined,
-}) {
-  console.log("sceneKey prop:", sceneKey);
-  console.log("SceneCanvas posters len:", posters?.length, posters?.[0]?.url);
+/**
+ * SceneCanvas — unified renderer for Editor (upload) and Viewer (preview)
+ */
 
+const SceneCanvas = forwardRef(function SceneCanvas({ mode = "upload" }, ref) {
   const { meshReady } = useLiDAR();
-  const posterRefs = useRef(new Map());
+  const posters = useRoomStore((s) => s.posters);
+
+  const [selectedPosterIndex, setSelectedPosterIndex] = useState(null);
+  const [isDragging, setIsDragging] = useState(false);
+
+  const lidarRef = useRef();
+  const orbitRef = useRef();
   const transformRef = useRef();
   const collectedTransforms = useRef(new Map());
   const webglCanvasRef = useRef(null);
 
-  // expose transform data to parent
-  useEffect(() => {
-    if (!canvasRef) return;
-    if (!canvasRef.current) canvasRef.current = {};
-    canvasRef.current.getPosterTransforms = () =>
-      Array.from(collectedTransforms.current.entries())
-        .sort(([a], [b]) => a - b)
-        .map(([_, val]) => val);
-  }, [canvasRef]);
+  const renderMode = mode === "world" ? "points" : "mesh";
+  const isUpload = mode === "upload";
 
-  // prevent WebGL context loss
+  // --- Prevent WebGL Context Loss ---
   useEffect(() => {
     const el = webglCanvasRef.current;
     if (!el) return;
-    const handleLost = (e) => e.preventDefault();
-    el.addEventListener("webglcontextlost", handleLost, { passive: false });
-    return () => el.removeEventListener("webglcontextlost", handleLost);
+    const preventLost = (e) => e.preventDefault();
+    el.addEventListener("webglcontextlost", preventLost, { passive: false });
+    return () => el.removeEventListener("webglcontextlost", preventLost);
   }, []);
 
-  const handleSelect = (index) => {
-    if (!isEditable || !transformRef.current) return;
-    if (selectedPosterIndex === index) return;
+  // --- Attach transform controls (only in upload mode) ---
+  useEffect(() => {
+    if (!isUpload || !transformRef.current) return;
     transformRef.current.detach();
-    setSelectedPosterIndex(index);
-    const mesh = posterRefs.current.get(index) || null;
-    if (mesh) transformRef.current.attach(mesh);
-  };
-
-  const handlePosterMount = (index, mesh) => {
-    if (!isEditable) return;
-    posterRefs.current.set(index, mesh);
-    const attach = () => {
-      if (!transformRef.current || !mesh) return;
-      transformRef.current.detach();
-      setSelectedPosterIndex(index);
+    if (selectedPosterIndex == null) return;
+    const mesh = collectedTransforms.current.get(selectedPosterIndex)?.mesh;
+    if (mesh) {
       transformRef.current.attach(mesh);
+      mesh.updateMatrixWorld(true);
+      transformRef.current.updateMatrixWorld(true);
+    }
+  }, [selectedPosterIndex, isUpload]);
+
+  // --- Auto-select newest poster ---
+  useEffect(() => {
+    if (!isUpload) return;
+    if (posters.length === 0) return;
+    const newestIndex = posters.length - 1;
+    const newestMesh = collectedTransforms.current.get(newestIndex)?.mesh;
+    if (newestMesh && selectedPosterIndex === null) {
+      setSelectedPosterIndex(newestIndex);
+    }
+  }, [posters, selectedPosterIndex, isUpload]);
+
+  const handleSelect = (index) => {
+    if (isUpload) setSelectedPosterIndex(index);
+  };
+
+  const handlePosterMount = (mesh) => {
+    if (!mesh || typeof mesh.updateMatrixWorld !== "function") return;
+    const index = posters.length - 1;
+    collectedTransforms.current.set(index, { mesh });
+
+    if (isUpload && transformRef.current) {
+      transformRef.current.detach();
+      transformRef.current.attach(mesh);
+      mesh.updateMatrixWorld(true);
+      transformRef.current.updateMatrixWorld(true);
+      setSelectedPosterIndex(index);
+    }
+  };
+
+  const handleTransformChange = (idx, transform) => {
+    if (isUpload) roomState.updatePoster(idx, { transform });
+  };
+
+  // --- Build Lidar Subtree ---
+  const lidarSubtree = useMemo(() => {
+    if (!meshReady) return null;
+    return renderMode === "mesh" ? (
+      <group ref={lidarRef}>
+        <LiDARRoom />
+      </group>
+    ) : (
+      <PointRoom />
+    );
+  }, [meshReady, renderMode]);
+
+  // --- Expose transforms to parent (for save) ---
+  if (ref) {
+    ref.current = {
+      getPosterTransforms: () =>
+        Array.from(collectedTransforms.current.entries()).map(([i, { mesh }]) => {
+          if (!mesh) return null;
+          return {
+            position: mesh.position.toArray(),
+            rotation: [mesh.rotation.x, mesh.rotation.y, mesh.rotation.z],
+            scale: mesh.scale.toArray(),
+          };
+        }),
     };
-    if (!transformRef.current) {
-      const interval = setInterval(() => {
-        if (transformRef.current) {
-          clearInterval(interval);
-          attach();
-        }
-      }, 50);
-    } else attach();
-  };
+  }
 
-  const handleTransformChange = (idx, t) => {
-    collectedTransforms.current.set(idx, t);
-  };
-
-  const showPosters = renderMode === "mesh" && posters.length > 0;
-
+  // --- Render ---
   return (
     <div style={{ width: "100vw", height: "100vh" }}>
       <Canvas
-        key={sceneKey}
         gl={{ preserveDrawingBuffer: false }}
         camera={{ position: [0, -2.2, -3.5], fov: 70 }}
-        onCreated={(state) => {
-          canvasRef.current = canvasRef.current || {};
-          canvasRef.current.__three = state;
-          canvasRef.current.getPosterTransforms = () =>
-            Array.from(collectedTransforms.current.entries())
-              .sort(([a], [b]) => a - b)
-              .map(([_, val]) => val);
-          webglCanvasRef.current = state.gl.domElement;
-        }}
+        onCreated={(state) => (webglCanvasRef.current = state.gl.domElement)}
       >
         <ambientLight intensity={0.5} />
         <directionalLight position={[2, 4, 2]} intensity={0.8} />
 
         <Suspense fallback={null}>
-          {meshReady && renderMode === "mesh" && (
-            <group ref={lidarRef}>
-              <LiDARRoom />
-            </group>
-          )}
-          {meshReady && renderMode === "points" && <PointRoom />}
+          {lidarSubtree}
 
-          {showPosters &&
-            posters.map((poster, i) => (
-              <EditPoster
-                key={poster.url || i}
-                imageUrl={poster.url}
-                index={i}
-                size={poster.size ?? "A0"}
-                initialTransform={poster.transform}
-                selectedPosterIndex={selectedPosterIndex}
-                onSelect={isEditable ? handleSelect : undefined}
-                onMount={isEditable ? handlePosterMount : undefined}
-                onDragStart={isEditable ? () => setIsDragging(true) : undefined}
-                onDragEnd={isEditable ? () => setIsDragging(false) : undefined}
-                onTransformChange={isEditable ? handleTransformChange : undefined}
-              />
-            ))}
+          {posters.map((poster, i) => (
+            <EditPoster
+              key={(poster.id || i) + ":" + (poster.url || "")}
+              imageUrl={poster.url}
+              index={i}
+              size={poster.size ?? "A0"}
+              initialTransform={poster.transform}
+              selectedPosterIndex={selectedPosterIndex}
+              onSelect={() => handleSelect(i)}
+              onMount={handlePosterMount}
+              onDragStart={() => setIsDragging(true)}
+              onDragEnd={() => setIsDragging(false)}
+              onTransformChange={handleTransformChange}
+              mode={mode}
+            />
+          ))}
         </Suspense>
 
-        {isEditable && showPosters && (
+        {/* Transform controls only exist in upload mode */}
+        {isUpload && posters.length > 0 && (
           <TransformControls
             ref={transformRef}
             enabled={selectedPosterIndex !== null}
@@ -137,8 +154,15 @@ export default function SceneCanvas({
           />
         )}
 
-        <OrbitControls ref={orbitRef} enabled={!isDragging} target={[0, -1.6, 0]} />
+        {/* Orbit always available */}
+        <OrbitControls
+          ref={orbitRef}
+          enabled={!isDragging}
+          target={[0, -1.6, 0]}
+        />
       </Canvas>
     </div>
   );
-}
+});
+
+export default SceneCanvas;

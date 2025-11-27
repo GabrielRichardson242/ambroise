@@ -40,12 +40,25 @@ const LiDARRoom = forwardRef((props, ref) => {
     fxMaterial.color.set(fx.hue);
   });
 
+  useFrame(() => {
+    if (lidarMeshRef.current) {
+      lidarMeshRef.current.updateMatrixWorld(true);
+    }
+    if (proxyMeshRef.current) {
+      proxyMeshRef.current.updateMatrixWorld(true);
+    }
+  });
+
   if (!lidarMeshRef.current) return null;
 
   return (
     <group ref={ref} rotation={[0, Math.PI / 2, 0]} position={[0, -1.6, 0]}>
       <primitive object={lidarMeshRef.current} material={fxMaterial} />
-      {proxyMeshRef.current && <primitive object={proxyMeshRef.current} visible={false} />}
+      {proxyMeshRef.current && (
+        <primitive 
+          object={proxyMeshRef.current} 
+          visible={true} />
+      )}
     </group>
   );
 });

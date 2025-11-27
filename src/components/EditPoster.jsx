@@ -31,7 +31,7 @@ export default function EditPoster(props) {
     mode = "upload",
   } = props;
 
-  // === GUARD: prevent undefined texture crash ===
+  // Guard: prevent undefined texture crash
   if (!imageUrl) {
     console.warn("EditPoster: missing imageUrl for index", index);
     return null;
@@ -48,17 +48,16 @@ export default function EditPoster(props) {
   const planeSize = A_SIZES[size] ?? A_SIZES["A0"];
   const raycaster = useRef(new THREE.Raycaster());
   const mouse = useRef(new THREE.Vector2());
-  const offset = 0.015;
   const isUpload = mode === "upload";
 
-  // === Mount once ===
+  // Mount once
   useLayoutEffect(() => {
     if (hasMounted.current || !meshRef.current) return;
     onMount?.(meshRef.current);
     hasMounted.current = true;
   }, [onMount]);
 
-  // === Apply stored transform ===
+  // Apply stored transform
   useEffect(() => {
     if (!meshRef.current || !initialTransform) return;
     const mesh = meshRef.current;
@@ -70,7 +69,7 @@ export default function EditPoster(props) {
       mesh.scale.fromArray(initialTransform.scale);
   }, [initialTransform]);
 
-  // === Spawn in front of camera ===
+  // Spawn in front of camera on first load (upload mode)
   useEffect(() => {
     if (
       !isUpload ||
@@ -89,7 +88,7 @@ export default function EditPoster(props) {
     setHasSpawned(true);
   }, [camera, hasSpawned, imageUrl, isUpload, initialTransform]);
 
-  // === Mouse tracking ===
+  // Track mouse for dragging
   useEffect(() => {
     if (!isUpload) return;
     const handlePointerMove = (event) => {
@@ -101,11 +100,12 @@ export default function EditPoster(props) {
     return () => window.removeEventListener("pointermove", handlePointerMove);
   }, [gl, isUpload]);
 
-  // === Snapping ===
+  // Snapping & dragging
   useFrame(() => {
     if (!isUpload || !isDragging || !proxyMeshRef.current || !meshRef.current)
       return;
 
+    const POSTER_PROUD = 0.02;
     const mesh = meshRef.current;
     const proxyMesh = proxyMeshRef.current;
 
@@ -114,7 +114,7 @@ export default function EditPoster(props) {
     if (hits.length === 0) return;
 
     const hit = hits[0];
-    mesh.position.copy(hit.point).addScaledVector(hit.normal, offset);
+    mesh.position.copy(hit.point).addScaledVector(hit.normal, POSTER_PROUD);
 
     const normalMatrix = new THREE.Matrix3().getNormalMatrix(
       proxyMesh.matrixWorld
@@ -142,7 +142,7 @@ export default function EditPoster(props) {
     mesh.quaternion.setFromRotationMatrix(basis);
   });
 
-  // === Pointer handlers ===
+  // Pointer handlers
   const handlePointerDown = (e) => {
     if (!isUpload) return;
     e.stopPropagation();
@@ -178,7 +178,7 @@ export default function EditPoster(props) {
     }
   };
 
-  // === Deselect ===
+  // Deselect
   useEffect(() => {
     if (!isUpload) return;
     if (selectedPosterIndex !== index && isDragging) {
@@ -188,7 +188,7 @@ export default function EditPoster(props) {
     }
   }, [selectedPosterIndex, index, isDragging, onDragEnd, isUpload]);
 
-  // === Update geometry ===
+  // Update geometry on size change
   useEffect(() => {
     if (!meshRef.current) return;
     const [w, h] = A_SIZES[size] ?? A_SIZES["A0"];
@@ -196,6 +196,20 @@ export default function EditPoster(props) {
     meshRef.current.geometry.dispose();
     meshRef.current.geometry = geom;
   }, [size]);
+
+  // Force poster to always render above mesh
+  useEffect(() => {
+    if (!meshRef.current) return;
+    const mat = meshRef.current.material;
+
+    mat.transparent = true;  // <-- REQUIRED FIX
+    mat.opacity = 1.0;       // <-- stays visually solid
+
+    mat.depthTest = false;
+    mat.depthWrite = false;
+
+    meshRef.current.renderOrder = 9999;
+  });
 
   return (
     <mesh

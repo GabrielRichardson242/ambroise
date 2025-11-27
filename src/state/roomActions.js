@@ -2,13 +2,7 @@ import { supabase } from "../lib/supabaseClient";
 import { roomState } from "./roomState";
 import { v4 as uuidv4 } from "uuid";
 
-/**
- * Handles Supabase I/O for roomState.
- * Keeps async calls outside of React components.
- */
-
 export const roomActions = {
-  /** Load a room + its posters into roomState */
   async loadRoomFromSupabase(roomId) {
     console.log("[roomActions] Loading room:", roomId);
 
@@ -27,10 +21,10 @@ export const roomActions = {
       .eq("room_id", roomId)
       .order("created_at", { ascending: true });
 
-    if (postersErr)
+    if (postersErr) {
       throw new Error("Failed to fetch posters: " + postersErr.message);
+    }
 
-    // ✅ Rebuild transform from stored fields
     const hydratedPosters = (posters || []).map((p) => ({
       id: p.id,
       url: p.file_url,
@@ -43,14 +37,14 @@ export const roomActions = {
     }));
 
     roomState.loadRoom(room, hydratedPosters);
-    console.log(`[roomActions] Hydrated ${hydratedPosters.length} posters from Supabase`);
+    console.log(`[roomActions] Hydrated ${hydratedPosters.length} posters`);
 
     return roomState.data.id;
   },
 
-  /** Create a new room entry in Supabase if it doesn't exist */
   async createRoomIfMissing() {
     const id = roomState.data.id || uuidv4();
+
     const { data, error } = await supabase
       .from("rooms")
       .select("id")
@@ -67,8 +61,11 @@ export const roomActions = {
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       });
-      if (createErr)
+
+      if (createErr) {
         throw new Error("Room creation failed: " + createErr.message);
+      }
+
       console.log("[roomActions] Created new room:", id);
     }
 
@@ -76,39 +73,43 @@ export const roomActions = {
     return id;
   },
 
-  /** Save current roomState to Supabase */
-  async saveRoomToSupabase(isPreview = false) {
+  // Save current roomState to Supabase, with optional extra fields (e.g. screenshot_url)
+  async saveRoomToSupabase(isPreview = false, extra = {}) {
     const serialized = roomState.serialize();
     const { room, posters } = serialized;
 
     console.log("[roomActions] Saving room:", room.id);
 
-    // --- Upsert room ---
-    const { error: roomErr } = await supabase.from("rooms").upsert({
-      id: room.id,
-      name: room.name,
-      description: room.description,
-      scan_draco_url: room.scan_draco_url || null,
-      raw_url: room.raw_url || null,
-      camera_position: room.camera_position,
-      camera_target: room.camera_target,
-      theme: room.theme,
-      is_preview: isPreview,
-      updated_at: new Date().toISOString(),
-    });
+    const { error: roomErr } = await supabase
+      .from("rooms")
+      .upsert({
+        id: room.id,
+        name: room.name,
+        description: room.description,
+        scan_draco_url: room.scan_draco_url || null,
+        raw_url: room.raw_url || null,
+        camera_position: room.camera_position,
+        camera_target: room.camera_target,
+        theme: room.theme,
+        is_preview: isPreview,
+        screenshot_url: extra.screenshot_url || room.screenshot_url || null,
+        updated_at: new Date().toISOString(),
+      });
 
-    if (roomErr) throw new Error("Room save failed: " + roomErr.message);
+    if (roomErr) {
+      throw new Error("Room save failed: " + roomErr.message);
+    }
 
-    // --- Sync posters ---
     const { data: existing, error: fetchErr } = await supabase
       .from("posters")
       .select("id")
       .eq("room_id", room.id)
       .order("created_at", { ascending: true });
 
-    if (fetchErr) throw new Error("Poster fetch failed: " + fetchErr.message);
+    if (fetchErr) {
+      throw new Error("Poster fetch failed: " + fetchErr.message);
+    }
 
-    // If no existing posters, insert all
     if (!existing?.length) {
       const inserts = posters.map((p) => ({
         id: uuidv4(),
@@ -120,16 +121,20 @@ export const roomActions = {
         scale: p.scale,
         created_at: new Date().toISOString(),
       }));
+
       const { error: insertErr } = await supabase
         .from("posters")
         .insert(inserts);
-      if (insertErr)
+
+      if (insertErr) {
         throw new Error("Poster insert failed: " + insertErr.message);
+      }
     } else {
-      // Update existing posters
       const n = Math.min(existing.length, posters.length);
+
       for (let i = 0; i < n; i++) {
         const p = posters[i];
+
         const { error: updateErr } = await supabase
           .from("posters")
           .update({
@@ -140,8 +145,10 @@ export const roomActions = {
             updated_at: new Date().toISOString(),
           })
           .eq("id", existing[i].id);
-        if (updateErr)
+
+        if (updateErr) {
           console.error("Poster update failed:", updateErr.message);
+        }
       }
     }
 

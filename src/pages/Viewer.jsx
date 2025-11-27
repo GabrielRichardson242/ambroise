@@ -6,33 +6,28 @@ import SceneCanvas from "../components/SceneCanvas";
 import { createProxyMeshFromScene } from "../utils/proxyGenerator";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { DRACOLoader } from "three/examples/jsm/loaders/DRACOLoader.js";
-
-/**
- * Viewer.jsx — Read-only preview for published Ambroise rooms.
- * Hydrates the same Supabase room data as Editor but locks all interactions.
- */
+import { supabase } from "../lib/supabaseClient";
 
 export default function Viewer() {
   const { roomId } = useParams();
   const { room, posters, loading } = useSupabaseRoom(roomId);
-  const { setMeshes } = useLiDAR();
+  const { setMeshes, meshReady } = useLiDAR();
 
   const hydratedRef = useRef(false);
+  const screenshotDoneRef = useRef(false);
+  const canvasRef = useRef(null);
 
-  // ---------- 1. HYDRATE LIDAR SCAN ----------
+  // ------------------ LOAD SCAN ------------------
   useEffect(() => {
     async function hydrateScan() {
       if (loading || hydratedRef.current) return;
-      if (!room?.scan_draco_url) {
-        console.warn("No scan_draco_url found for this room.");
-        return;
-      }
+      if (!room?.scan_draco_url) return;
 
       try {
-        console.log("Loading scan from:", room.scan_draco_url);
-
         const dracoLoader = new DRACOLoader();
         dracoLoader.setDecoderPath("/draco/");
+        dracoLoader.setWorkerLimit(1);
+
         const loader = new GLTFLoader();
         loader.setDRACOLoader(dracoLoader);
 
@@ -41,9 +36,8 @@ export default function Viewer() {
         );
 
         const lidarScene = gltf.scene || gltf.scenes?.[0];
-        if (!lidarScene) throw new Error("Invalid GLB: no scene");
-
         lidarScene.traverse((c) => (c.frustumCulled = false));
+
         const proxyMesh = createProxyMeshFromScene(lidarScene.clone(true), {
           simplifyRatio: 0.05,
           inflateDistance: 0.02,
@@ -51,16 +45,63 @@ export default function Viewer() {
 
         setMeshes({ lidarMesh: lidarScene, proxyMesh });
         hydratedRef.current = true;
-        console.log("✅ Scan loaded successfully");
       } catch (err) {
-        console.error("❌ Viewer load error:", err.message);
+        console.error("Viewer load error:", err);
       }
     }
 
     hydrateScan();
   }, [room, loading, setMeshes]);
 
-  // ---------- 2. RENDER STATES ----------
+
+  // ------------------ TAKE & SAVE SCREENSHOT ------------------
+  useEffect(() => {
+    if (!meshReady) return;
+    if (!posters.length) return;
+    if (screenshotDoneRef.current) return;
+
+    const timeout = setTimeout(async () => {
+      const canvas = canvasRef.current?.getCanvas?.();
+      if (!canvas) return;
+
+      try {
+        const dataUrl = canvas.toDataURL("image/jpeg", 0.9);
+
+        // upload to Supabase bucket
+        const fileName = `thumb_${roomId}.jpg`;
+        const path = `${roomId}/${fileName}`;
+        const file = await (await fetch(dataUrl)).blob();
+
+        const { error: uploadErr } = await supabase.storage
+          .from("room_thumbnails")
+          .upload(path, file, { upsert: true });
+
+        if (uploadErr) {
+          console.error("Thumbnail upload failed:", uploadErr);
+          return;
+        }
+
+        const { data: urlData } = supabase.storage
+          .from("room_thumbnails")
+          .getPublicUrl(path);
+
+        await supabase
+          .from("rooms")
+          .update({ thumbnail_url: urlData.publicUrl })
+          .eq("id", roomId);
+
+        screenshotDoneRef.current = true;
+        console.log("Thumbnail saved:", urlData.publicUrl);
+      } catch (err) {
+        console.error("Screenshot error:", err);
+      }
+    }, 800); // allow scene to settle
+
+    return () => clearTimeout(timeout);
+  }, [meshReady, posters, roomId]);
+
+
+  // ------------------ UI STATES ------------------
   if (loading) {
     return (
       <div className="flex items-center justify-center h-screen text-gray-400">
@@ -77,10 +118,11 @@ export default function Viewer() {
     );
   }
 
-  // ---------- 3. RENDER LOCKED SCENE ----------
+
+  // ------------------ RENDER ------------------
   return (
     <div className="relative w-screen h-screen bg-black">
-      <SceneCanvas mode="preview" />
+      <SceneCanvas ref={canvasRef} mode="preview" />
 
       <div className="absolute top-4 left-4 bg-white/80 backdrop-blur p-3 rounded-lg text-black shadow-lg">
         <h1 className="text-xl font-semibold">{room.name || "Untitled Room"}</h1>

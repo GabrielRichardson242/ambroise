@@ -3,59 +3,50 @@ import * as BufferGeometryUtils from "three/examples/jsm/utils/BufferGeometryUti
 import { SimplifyModifier } from "three/examples/jsm/modifiers/SimplifyModifier.js";
 
 /**
- * Create a simplified, smoothed, and slightly inflated proxy mesh
- * from a loaded GLTF/GLB scene.
- *
- * This proxy mesh is used for snapping, raycasting, and dragging posters
- * instead of the raw, complex LiDAR mesh.
- *
- * @param {THREE.Scene} scene - The imported GLTF/GLB scene.
+ * @param {THREE.Scene} scene
  * @param {Object} [options]
- * @param {number} [options.simplifyRatio=0.05] - Fraction of vertices to keep.
- * @param {number} [options.inflateDistance=0.02] - How far to push vertices along normals (meters).
- * @returns {THREE.Mesh} - The proxy collider mesh.
+ * @param {number} [options.simplifyRatio=0.05]
+ * @param {number} [options.inflateDistance=0.02]
+ * @returns {THREE.Mesh}
  */
 export function createProxyMeshFromScene(
   scene,
-  { simplifyRatio = 0.05, inflateDistance = 0.02 } = {}
+  { simplifyRatio = 0.05, inflateDistance = 0.001 } = {}
 ) {
   const geometries = [];
 
-  // Collect all mesh geometries in the scene
+  // Collect and bake transforms
   scene.traverse((o) => {
     if (o.isMesh && o.geometry) {
       const g = o.geometry.clone();
-      g.applyMatrix4(o.matrixWorld); // bake transforms
+      g.applyMatrix4(o.matrixWorld);
       geometries.push(g);
     }
   });
 
   if (!geometries.length) throw new Error("No mesh geometry found in GLB scene.");
 
-  // Merge into a single geometry (handles both old and new Three.js versions)
   const mergeFn =
     BufferGeometryUtils.mergeBufferGeometries ||
     BufferGeometryUtils.mergeGeometries;
 
-  if (!mergeFn)
-    throw new Error("mergeBufferGeometries not found in BufferGeometryUtils");
+  if (!mergeFn) throw new Error("mergeBufferGeometries not found.");
 
   const merged = mergeFn(geometries, true);
 
-  // Simplify geometry to reduce vertex count
+  // Simplify
   const modifier = new SimplifyModifier();
   const targetCount = Math.max(
     1000,
     Math.floor(merged.attributes.position.count * simplifyRatio)
   );
   const simplified = modifier.modify(merged, targetCount);
-
-  // Recalculate normals for inflation
   simplified.computeVertexNormals();
 
-  // --- Inflate geometry along its vertex normals ---
+  // Base inflation
   const pos = simplified.attributes.position;
   const norm = simplified.attributes.normal;
+
   for (let i = 0; i < pos.count; i++) {
     pos.setXYZ(
       i,
@@ -67,9 +58,7 @@ export function createProxyMeshFromScene(
   pos.needsUpdate = true;
   simplified.computeBoundingBox();
   simplified.computeBoundingSphere();
-  // ------------------------------------------------
 
-  // Create invisible proxy mesh
   const proxy = new THREE.Mesh(
     simplified,
     new THREE.MeshNormalMaterial({
@@ -79,7 +68,7 @@ export function createProxyMeshFromScene(
       depthTest: true,
     })
   );
-  proxy.name = "ProxyCollider";
 
+  proxy.name = "ProxyCollider";
   return proxy;
 }

@@ -12,12 +12,13 @@ import LiDARRoom from "./LiDARRoom";
 import PointRoom from "./PointRoom";
 import EditPoster from "./EditPoster";
 import { useLiDAR } from "../context/LiDARContext";
-import { useRoomStore } from "../state/useRoomStore";
-import { roomState } from "../state/roomState";
+// import { useRoomStore } from "../state/useRoomStore";
+// import { roomState } from "../state/roomState";
 
-const SceneCanvas = forwardRef(function SceneCanvas({ mode = "upload" }, ref) {
+const SceneCanvas = forwardRef(function SceneCanvas({ mode = "upload",data }, ref) {
   const { meshReady } = useLiDAR();
-  const posters = useRoomStore((s) => s.posters);
+ //const posters = useRoomStore((s) => s.posters);//
+ const posters = data?.artworks ?? []; // temp override for showcase
 
   const [selectedPosterIndex, setSelectedPosterIndex] = useState(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -89,11 +90,15 @@ const SceneCanvas = forwardRef(function SceneCanvas({ mode = "upload" }, ref) {
     }
   };
 
-  const handleTransformChange = (idx, transform) => {
-    if (isUpload) {
-      roomState.updatePoster(idx, { transform });
-    }
+    const handleTransformChange = (idx, transform) => {
+    console.log("Transform changed:", idx, transform);
   };
+
+  // const handleTransformChange = (idx, transform) => {
+  //   if (isUpload) {
+  //     roomState.updatePoster(idx, { transform });
+  //   }
+  // };
 
   const lidarSubtree = useMemo(() => {
     if (!meshReady) return null;
@@ -150,8 +155,8 @@ const SceneCanvas = forwardRef(function SceneCanvas({ mode = "upload" }, ref) {
 
           {posters.map((poster, i) => (
             <EditPoster
-              key={(poster.id || i) + ":" + (poster.url || "")}
-              imageUrl={poster.url}
+              key={(poster.id || i) + ":" + (poster.image_url ||poster.url || "")}
+              imageUrl={poster.image_url || poster.url}
               index={i}
               size={poster.size ?? "A0"}
               initialTransform={poster.transform}

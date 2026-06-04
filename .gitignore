@@ -67,7 +67,6 @@ supabase/.temp/
 # -----------------------------
 # GENERATED OUTPUTS
 # -----------------------------
-*.glb
 *.gltf
 *.draco
 *.wasm

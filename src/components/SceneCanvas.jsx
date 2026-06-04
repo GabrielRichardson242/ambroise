@@ -287,7 +287,7 @@ const SceneCanvas = forwardRef(function SceneCanvas(
           antialias: true,
           alpha: true,
         }}
-        camera={{ position: [0, 2, -3.5], fov: 70 }}
+        camera={{ position: [0, 2, -6.4], fov: 78 }}
         onCreated={(state) => {
           webglCanvasRef.current = state.gl.domElement;
 

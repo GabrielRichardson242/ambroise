@@ -22,7 +22,7 @@ export const SHOWCASE_ROOM = {
       },
 
       focus: {
-        distance: 2.4,
+        distance: 2.125,
         yOffset: -0.75,
         targetYOffset: -0.75,
       },
@@ -109,7 +109,7 @@ export const SHOWCASE_ROOM = {
       },
 
       focus: {
-        distance: 1.4,
+        distance: 1.2,
         yOffset: -0.47,
         targetYOffset: -0.47,
       },

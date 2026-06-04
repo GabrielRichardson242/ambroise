@@ -110,8 +110,8 @@ export const SHOWCASE_ROOM = {
 
       focus: {
         distance: 1.4,
-        yOffset: -0.3,
-        targetYOffset: -0.3,
+        yOffset: -0.6,
+        targetYOffset: -0.6,
       },
 
       modules: [

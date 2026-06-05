@@ -250,7 +250,7 @@ function WhatIsGrain() {
 
       <p style={paragraphStyle}>
         USING LIDAR SCANS, ARTISTS CAN TAKE A REAL PLACE IN THE WORLD, ADD THEIR WORK
-        AND MAKE IT THEIRS.
+        AND MAKE IT THIERS.
       </p>
 
       <p style={paragraphStyle}>

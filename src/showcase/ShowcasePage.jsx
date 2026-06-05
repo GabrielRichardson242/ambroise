@@ -5,6 +5,7 @@ import { useLiDAR } from "../context/LiDARContext";
 
 import ArtworkCloseButton from "./components/ArtworkCloseButton";
 import ArtworkFocusPanel from "./components/ArtworkFocusPanel";
+import GrainInfoDrawer from "./components/GrainInfoDrawer";
 
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { DRACOLoader } from "three/examples/jsm/loaders/DRACOLoader.js";
@@ -19,6 +20,7 @@ export default function ShowcasePage() {
 
   const [resetSignal, setResetSignal] = useState(0);
   const [zoomFrameImage, setZoomFrameImage] = useState(null);
+  const [infoOpen, setInfoOpen] = useState(false);
 
   const [viewerState, setViewerState] = useState({
     mode: "idle",
@@ -157,18 +159,18 @@ export default function ShowcasePage() {
         mode="showcase"
         data={SHOWCASE_ROOM}
         onArtworkSelect={handleArtworkSelect}
-        isArtworkFocused={viewerState.mode !== "idle"}
+        isArtworkFocused={viewerState.mode !== "idle" || infoOpen}
         resetSignal={resetSignal}
         onCameraResetComplete={handleCameraResetComplete}
       />
 
-      {!isZoomed && (
+      {!isZoomed && !infoOpen && (
         <div
           style={{
             position: "fixed",
             top: "2vh",
             left: "2vh",
-            zIndex: 999999,
+            zIndex: 999989,
             color: "white",
             background: "transparent",
             pointerEvents: "none",
@@ -257,6 +259,14 @@ export default function ShowcasePage() {
 
           <ArtworkFocusPanel artwork={viewerState.selectedArtwork} />
         </div>
+      )}
+
+      {!isZoomed && (
+        <GrainInfoDrawer
+          open={infoOpen}
+          onOpen={() => setInfoOpen(true)}
+          onClose={() => setInfoOpen(false)}
+        />
       )}
     </div>
   );

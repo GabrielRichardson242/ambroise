@@ -96,23 +96,9 @@ export default function GrainInfoDrawer({ open, onOpen, onClose }) {
             boxSizing: "border-box",
           }}
         >
-          <div
-            className="font-disket uppercase"
-            style={{
-              fontSize: "clamp(16px, 4.4vw, 24px)",
-              lineHeight: 1.08,
-              letterSpacing: "0.04em",
-              marginBottom: "42px",
-            }}
-          >
-            CREATIVE TECHNOLOGIST
-            <br />
-            LONDON / BRIGHTON
-            <br />
-            22
-          </div>
+           <ProfileIntro />
 
-          <ContactBlock />
+            <ContactBlock />
         </section>
 
         <WhatIsGrain />
@@ -125,6 +111,57 @@ export default function GrainInfoDrawer({ open, onOpen, onClose }) {
   );
 }
 
+function ProfileIntro() {
+  return (
+    <div style={{ marginBottom: "16px" }}>
+      <div
+        className="font-disket uppercase"
+        style={{
+          fontSize: "clamp(12px, 4vw, 18px)",
+          lineHeight: 1.4,
+          letterSpacing: "0.04em",
+          marginBottom: "42px",
+        }}
+      >
+        CREATIVE TECHNOLOGIST
+        <br />
+        BRIGHTON
+        <br />
+        22
+      </div>
+
+      <div className="font-newrail">
+        <div
+          style={{
+            color: "#AFAFAF",
+            fontSize: "clamp(12px, 3vw, 18px)",
+            borderBottom: "0.5px solid #AFAFAF",
+            marginBottom: "12px",
+          }}
+        >
+          Availability
+        </div>
+
+        <p
+          className="font-britrln"
+          style={{
+            margin: 0,
+            color: "#ffffff",
+            fontSize: "clamp(14px, 3.8vw, 24px)",
+            lineHeight: 1.36,
+            fontWeight: 400,
+          }}
+        >
+          Looking for full time junior roles. I built this with no experience and
+          it doesn’t completely suck, I'm a fast learner and will jump into any challenge 
+          with a near dog like lack of self preservation. Portfolio under construction,
+          feel free to bookmark and check back every other day.
+        </p>
+      </div>
+    </div>
+  );
+}
+
 function ContactBlock() {
   return (
     <div className="font-newrail" style={{ marginBottom: "42px" }}>
@@ -133,7 +170,6 @@ function ContactBlock() {
           color: "#AFAFAF",
           fontSize: "clamp(12px, 3vw, 18px)",
           borderBottom: "0.5px solid #AFAFAF",
-          paddingBottom: "2px",
         }}
       >
         Contacts
@@ -154,8 +190,8 @@ function ContactBlock() {
       <div
         style={{
           borderTop: "0.5px solid #AFAFAF",
-          marginTop: "34px",
-          paddingTop: "8px",
+          marginTop: "12px",
+          paddingTop: "0px",
         }}
       >
         <ContactRow label="Portfolio" href="https://gabriel-folio.vercel.app/">
@@ -174,7 +210,8 @@ function ContactRow({ label, href, children }) {
         gridTemplateColumns: "100px minmax(0, 1fr)",
         columnGap: "10px",
         fontSize: "clamp(12px, 3vw, 18px)",
-        lineHeight: 1.45,
+        fontWeight: 400,
+        lineHeight: 2.4,
       }}
     >
       <div style={{ color: "#AFAFAF" }}>{label}</div>
@@ -186,7 +223,7 @@ function ContactRow({ label, href, children }) {
         style={{
           color: "#ffffff",
           textDecoration: "underline",
-          textUnderlineOffset: "2px",
+          textUnderlineOffset: "1px",
           overflowWrap: "break-word",
         }}
       >
@@ -198,102 +235,114 @@ function ContactRow({ label, href, children }) {
 
 function WhatIsGrain() {
   return (
-    <section
-      className="font-disket uppercase"
-      style={{
-        border: "0.5px solid #F4C403",
-        padding: "22px 20px 34px",
-        margin: "0 6px 42px",
-        boxSizing: "border-box",
-      }}
-    >
-         <div
+    <>
+      <section
+        className="font-disket uppercase"
         style={{
-          color: "#F4C403",
+          background: "#1b1b1b",
+          padding: "22px 20px 34px",
+          margin: "0 6px 42px",
+          boxSizing: "border-box",
+
+          boxShadow: `
+            inset 0 0 24px rgba(0,0,0,0.55),
+            inset 0 0 2px rgba(255,255,255,0.06)
+        `
+        }}
+      >
+        <div
+          style={{
+            color: "#F4C403",
+            fontSize: "clamp(12px, 3.2vw, 18px)",
+            lineHeight: 1.55,
+            marginBottom: "20px",
+            letterSpacing: "0.02em",
+          }}
+        >
+          WHAT IS GRAIN?
+        </div>
+
+        <div
+          style={{
+            color: "#FAFAFA",
+            fontSize: "clamp(12px, 3.2vw, 18px)",
+            lineHeight: 1.55,
+            marginBottom: "60px",
+            letterSpacing: "0.02em",
+          }}
+        >
+          INSTAGRAM IS GREAT TO PRESENT YOUR PERSONALITY,
+          <br />
+          <br />
+          PORTFOLIOS ARE GREAT TO SHOW YOUR WORK,
+          <br />
+          <br />
+          BUT NEITHER ARE GREAT FOR CREATIVE IDENTITY.
+        </div>
+
+        <div
+          style={{
+            color: "#F4C403",
+            fontSize: "clamp(12px, 3.2vw, 18px)",
+            lineHeight: 1.55,
+            marginBottom: "60px",
+            letterSpacing: "0.02em",
+          }}
+        >
+          GRAIN ALLOWS ARTISTS TO SHOW US HOW THEY GOT HERE.
+        </div>
+
+        <p style={paragraphStyle}>
+          IT'S DESIGNED TO BE AN INTERACTIVE LAYER ADDED TO AN INSTAGRAM BIO.
+          USING LIDAR SCANS, ARTISTS CAN TAKE A REAL PLACE IN THE WORLD, ADD
+          THEIR WORK AND MAKE IT THEIRS.
+        </p>
+
+        <p style={paragraphStyle}>
+          I DIDN’T WANT TO COMPETE WITH INSTAGRAM, I WANTED TO USE WHAT THEY DO
+          WELL, BUILDING PERSONAL NETWORKS + OUTREACH, AND ADD A LAYER TO OFFER
+          WHAT THEY DON’T, DEDICATED CREATIVE IDENTITY EXPRESSION.
+        </p>
+
+        <p style={paragraphStyle}>
+          THE NEW CREATIVE ECONOMY IS FREELANCE, AND AFTER TALKING TO SOME YOUNG
+          ONES, INSTAGRAM IS HOW THEY CONNECT. HOWEVER, IT’S TOO NOISY TO USE
+          CONVENIENTLY FOR CREATIVE PROFESSIONALS.
+        </p>
+
+        <p style={paragraphStyle}>
+          THE NEXT GOAL IS TO USE THAT INSTAGRAM NETWORK YOU ALREADY HAVE, AND
+          CONNECT GRAIN USERS THROUGH IT, TO CREATE A USEFUL PERSONAL CREATIVE
+          NETWORK.
+        </p>
+
+        <p style={paragraphStyle}>
+          INSTAGRAM IS THE HABIT FOR YOUNG PROFESSIONALS, THE END GOAL IS TO PUT
+          IT TO WORK.
+        </p>
+
+        <p style={paragraphStyle}>
+          THANK YOU.
+          <br />
+          GABRIEL
+        </p>
+      </section>
+
+      <section
+        className="font-disket uppercase"
+        style={{
+          padding: "0 20px",
+          marginBottom: "22px",
+          color: "#fafafa",
           fontSize: "clamp(12px, 3.2vw, 18px)",
           lineHeight: 1.55,
-          marginBottom: "20px",
           letterSpacing: "0.02em",
         }}
       >
-        WHAT IS GRAIN?
-      </div>
-      <div
-        style={{
-          color: "#FFFFFF",
-          fontSize: "clamp(12px, 3.2vw, 18px)",
-          lineHeight: 1.55,
-          marginBottom: "60px",
-          letterSpacing: "0.02em",
-        }}
-      >
-        INSTAGRAM IS GREAT TO PRESENT YOUR PERSONALITY,
-        <br />
-        <br />
-        PORTFOLIOS ARE GREAT TO SHOW YOUR WORK,
-        <br />
-        <br />
-        BUT NEITHER ARE GREAT FOR CREATIVE IDENTITY.
-      </div>
-
-      <div
-        style={{
-          color: "#F4C403",
-          fontSize: "clamp(12px, 3.2vw, 18px)",
-          lineHeight: 1.55,
-          marginBottom: "60px",
-          letterSpacing: "0.02em",
-        }}
-      >
-        GRAIN ALLOWS ARTISTS TO SHOW US HOW THEY GOT HERE.
-      </div>
-
-      <p style={paragraphStyle}>
-        USING LIDAR SCANS, ARTISTS CAN TAKE A REAL PLACE IN THE WORLD, ADD THEIR WORK
-        AND MAKE IT THIERS.
-      </p>
-
-      <p style={paragraphStyle}>
-        I DIDN’T WANT TO COMPETE WITH INSTAGRAM, I WANTED TO USE WHAT THEY DO
-        WELL, BUILDING PERSONAL NETWORKS + OUTREACH, AND ADD A LAYER TO OFFER
-        WHAT THEY DON’T, DEDICATED CREATIVE IDENTITY EXPRESSION.
-      </p>
-
-      <p style={paragraphStyle}>
-        THE NEW CREATIVE ECONOMY IS FREELANCE, AND AFTER TALKING TO SOME YOUNG
-        ONES, INSTAGRAM IS HOW THEY CONNECT. HOWEVER, IT’S TOO NOISY TO USE
-        CONVENIENTLY FOR CREATIVE PROFESSIONALS.
-      </p>
-
-      <p style={paragraphStyle}>
-        THE NEXT GOAL IS TO USE THAT INSTAGRAM NETWORK YOU ALREADY HAVE, AND
-        CONNECT GRAIN USERS THROUGH IT, TO CREATE A USEFUL PERSONAL CREATIVE
-        NETWORK.
-      </p>
-
-      <p style={paragraphStyle}>
-        INSTAGRAM IS THE HABIT FOR YOUNG PROFESSIONALS, THE END GOAL IS TO PUT
-        IT TO WORK.
-      </p>
-
-      <p style={paragraphStyle}>
-        THANK YOU.
-        <br />
-        GABRIEL
-      </p>
-
-      <p
-        style={{
-          ...paragraphStyle,
-          color: "#F4C403",
-          marginTop: "72px",
-          marginBottom: 0,
-        }}
-      >
-        I’M STILL BUILDING. IF YOU WANT A ROOM WHEN IT’S READY SIGN UP BELOW AND
+        I’M STILL BUILDING. IF YOU WANT A ROOM WHEN IT’S READY, SIGN UP BELOW.
         I’LL SWING YOU A MESSAGE WHEN IT’S GOOD ENOUGH.
-      </p>
-    </section>
+      </section>
+    </>
   );
 }
 

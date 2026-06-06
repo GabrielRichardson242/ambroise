@@ -88,6 +88,15 @@ button:focus-visible {
   font-family: "NewRail", sans-serif;
 }
 
+@font-face {
+  font-family: "Britrln";
+  src: url("/assets/fonts/britrln.ttf") format("truetype");
+}
+
+.font-britrln {
+  font-family: "Britrln", sans-serif;
+}
+
 @keyframes zoomFrameFadeIn {
   from {
     opacity: 0;

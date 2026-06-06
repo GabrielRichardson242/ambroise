@@ -370,7 +370,7 @@ const SceneCanvas = forwardRef(function SceneCanvas(
         <OrbitControls
           ref={orbitRef}
           enabled={!isDragging && !isArtworkFocused}
-          target={[0, 0, 0]}
+          target={[0, -0.6, 0]}
           enablePan={true}
           enableZoom={true}
           minDistance={1}

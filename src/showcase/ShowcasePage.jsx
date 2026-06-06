@@ -91,6 +91,36 @@ export default function ShowcasePage() {
     });
   };
 
+  // Showcase timer
+  useEffect(() => {
+  let idleTimer;
+
+  const resetIdleTimer = () => {
+    clearTimeout(idleTimer);
+
+    idleTimer = setTimeout(() => {
+      window.location.reload();
+    }, 90000);
+  };
+
+  window.addEventListener("touchstart", resetIdleTimer);
+  window.addEventListener("touchmove", resetIdleTimer);
+  window.addEventListener("click", resetIdleTimer);
+  window.addEventListener("scroll", resetIdleTimer);
+  window.addEventListener("mousemove", resetIdleTimer);
+
+  resetIdleTimer();
+
+  return () => {
+    clearTimeout(idleTimer);
+    window.removeEventListener("touchstart", resetIdleTimer);
+    window.removeEventListener("touchmove", resetIdleTimer);
+    window.removeEventListener("click", resetIdleTimer);
+    window.removeEventListener("scroll", resetIdleTimer);
+    window.removeEventListener("mousemove", resetIdleTimer);
+  };
+}, []);
+
   useEffect(() => {
     async function loadScan() {
       if (hydratedRef.current) return;
@@ -165,7 +195,7 @@ export default function ShowcasePage() {
       />
 
       {!isZoomed && !infoOpen && (
-        <div
+          <div
           style={{
             position: "fixed",
             top: "2vh",
@@ -230,35 +260,65 @@ export default function ShowcasePage() {
         </div>
       )}
 
-      {isZoomed && zoomFrameImage && (
-        <div
-          style={{
-            position: "fixed",
-            inset: 0,
-            zIndex: 9999997,
-            background: "#202020",
-            overflowY: "auto",
-            overflowX: "hidden",
-            WebkitOverflowScrolling: "touch",
-            animation: "zoomFrameFadeIn 120ms ease-out both",
-          }}
-        >
-          <img
-            src={zoomFrameImage}
-            alt=""
+            {isZoomed && zoomFrameImage && (
+        <>
+          <div
+            onClick={handleCloseArtwork}
             style={{
-              display: "block",
-              width: "100vw",
-              height: "58dvh",
-              objectFit: "cover",
-              objectPosition: "center top",
-              userSelect: "none",
-              pointerEvents: "none",
+              position: "fixed",
+              top: 0,
+              left: 0,
+              width: "20vw",
+              height: "50vh",
+              zIndex: 9999998,
+              pointerEvents: "auto",
+              background: "transparent",
             }}
           />
 
-          <ArtworkFocusPanel artwork={viewerState.selectedArtwork} />
-        </div>
+          <div
+            onClick={handleCloseArtwork}
+            style={{
+              position: "fixed",
+              top: 0,
+              right: 0,
+              width: "20vw",
+              height: "50vh",
+              zIndex: 9999998,
+              pointerEvents: "auto",
+              background: "transparent",
+            }}
+          />
+
+          <div
+            style={{
+              position: "fixed",
+              inset: 0,
+              zIndex: 9999997,
+              background: "#202020",
+              overflowY: "auto",
+              overflowX: "hidden",
+              WebkitOverflowScrolling: "touch",
+              animation: "zoomFrameFadeIn 120ms ease-out both",
+            }}
+          >
+            <img
+              src={zoomFrameImage}
+              alt=""
+              style={{
+                display: "block",
+                width: "100vw",
+                height: "58dvh",
+                objectFit: "cover",
+                objectPosition: "center top",
+                userSelect: "none",
+                pointerEvents: "none",
+              }}
+            />
+
+            <ArtworkFocusPanel artwork={viewerState.selectedArtwork} />
+          </div>
+        </>
       )}
 
       {!isZoomed && (

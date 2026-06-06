@@ -3,22 +3,33 @@ export default function ArtworkCloseButton({ onClick }) {
     <button
       type="button"
       onClick={onClick}
+      aria-label="Close artwork"
       style={{
         position: "fixed",
-        top: "2vh",
-        right: "3vw",
-        zIndex: 9999999,
-        color: "white",
-        background: "transparent",
-        border: "none",
+        top: "18px",
+        right: "18px",
+        zIndex: 99999999,
+
+        width: "48px",
+        height: "48px",
+
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+
+        background: "Transparent",
+        border: "0.5px solid #AFAFAF",
+
+        color: "#ffffff",
+        fontSize: "34px",
+        lineHeight: 1,
+
         padding: 0,
         margin: 0,
-        fontSize: "32px",
-        lineHeight: 1,
-        pointerEvents: "auto",
+
         cursor: "pointer",
+        pointerEvents: "auto",
       }}
-      aria-label="Close artwork"
     >
       ×
     </button>

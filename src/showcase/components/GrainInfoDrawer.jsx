@@ -15,7 +15,7 @@ export default function GrainInfoDrawer({ open, onOpen, onClose }) {
           position: "fixed",
           left: "12px",
           right: "12px",
-          bottom: "14px",
+          bottom: "32px",
           height: "38px",
           zIndex: 999990,
           background: "#202020",
@@ -51,7 +51,7 @@ export default function GrainInfoDrawer({ open, onOpen, onClose }) {
           position: "fixed",
           inset: 0,
           zIndex: 999991,
-          background: "#1b1b1b",
+          background: "#202020",
           color: "#ffffff",
           transform: open ? "translateY(0)" : "translateY(100%)",
           transition: "transform 520ms cubic-bezier(.2,.8,.2,1)",
@@ -239,15 +239,14 @@ function WhatIsGrain() {
       <section
         className="font-disket uppercase"
         style={{
-          background: "#1b1b1b",
-          padding: "22px 20px 34px",
-          margin: "0 6px 42px",
+          background: "#202020",
+          padding: "30px 20px 34px",
+          margin: "0 clamp(12px, 4vw, 72px) 42px",
           boxSizing: "border-box",
-
           boxShadow: `
             inset 0 0 24px rgba(0,0,0,0.55),
             inset 0 0 2px rgba(255,255,255,0.06)
-        `
+        `,
         }}
       >
         <div
@@ -331,8 +330,8 @@ function WhatIsGrain() {
       <section
         className="font-disket uppercase"
         style={{
-          padding: "0 20px",
-          marginBottom: "22px",
+          padding: "60px clamp(12px, 3vw, 42px) 10px",
+          marginBottom: "10px",
           color: "#fafafa",
           fontSize: "clamp(12px, 3.2vw, 18px)",
           lineHeight: 1.55,

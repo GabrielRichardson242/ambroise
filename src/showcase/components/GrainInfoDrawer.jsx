@@ -103,9 +103,38 @@ export default function GrainInfoDrawer({ open, onOpen, onClose }) {
 
         <WhatIsGrain />
 
-        <section style={{ padding: "0 20px" }}>
-          <JoinEarlyForm onSubmit={handleJoinSubmit} />
-        </section>
+        <section
+            style={{
+                padding: "0 20px",
+                display: "flex",
+                justifyContent: "center",
+            }}
+            >
+            <div
+                style={{
+                width: "100%",
+                maxWidth: "720px",
+                }}
+            >
+                <div
+                className="font-disket uppercase"
+                style={{
+                    color: "#fafafa",
+                    fontSize: "clamp(12px, 3.2vw, 18px)",
+                    lineHeight: 1.55,
+                    letterSpacing: "0.02em",
+                    marginBottom: "24px",
+                }}
+                >
+                I’M STILL BUILDING. IF YOU WANT A ROOM WHEN IT’S READY, SIGN UP
+                BELOW.
+                <br />
+                I’LL SWING YOU A MESSAGE WHEN IT’S GOOD ENOUGH.
+                </div>
+
+                <JoinEarlyForm onSubmit={handleJoinSubmit} />
+            </div>
+            </section>
       </aside>
     </>
   );
@@ -152,10 +181,16 @@ function ProfileIntro() {
             fontWeight: 400,
           }}
         >
-          Looking for full time junior roles. I built this with no experience and
-          it doesn’t completely suck, I'm a fast learner and will jump into any challenge 
-          with a near dog like lack of self preservation. Portfolio under construction,
-          feel free to bookmark and check back every other day.
+          Looking for full time junior roles. 
+          <br/>
+          <br/>
+          Grain was built with no prior dev or tech
+          experience or practical know-how. Always down for the challenge. 
+          <br/>
+          <br/>
+          Portfolio is still under construction, feel free to bookmark and check back 
+          every other day.
+          <br/>
         </p>
       </div>
     </div>
@@ -325,21 +360,6 @@ function WhatIsGrain() {
           <br />
           GABRIEL
         </p>
-      </section>
-
-      <section
-        className="font-disket uppercase"
-        style={{
-          padding: "60px clamp(12px, 3vw, 42px) 10px",
-          marginBottom: "10px",
-          color: "#fafafa",
-          fontSize: "clamp(12px, 3.2vw, 18px)",
-          lineHeight: 1.55,
-          letterSpacing: "0.02em",
-        }}
-      >
-        I’M STILL BUILDING. IF YOU WANT A ROOM WHEN IT’S READY, SIGN UP BELOW.
-        I’LL SWING YOU A MESSAGE WHEN IT’S GOOD ENOUGH.
       </section>
     </>
   );
